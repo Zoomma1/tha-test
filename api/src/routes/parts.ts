@@ -7,7 +7,7 @@ export const partKindSchema = z.enum(["blade", "ratchet", "bit"]);
 
 const listPartsQuery = z.object({ kind: partKindSchema.optional() });
 
-const partIdParam = z.string().regex(/^[1-9][0-9]*$/).pipe(z.coerce.number().int().safe());
+const partIdParam = z.string().regex(/^[1-9][0-9]*$/).transform((s) => Number(s)).pipe(z.number().int());
 
 export const partsRoutes = new Hono()
   .get("/", zValidator("query", listPartsQuery), async (c) => {
