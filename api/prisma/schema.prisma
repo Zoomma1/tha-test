@@ -1,0 +1,49 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// kind vaut "blade" | "ratchet" | "bit" : SQLite n'a pas d'enum, zod valide à la frontière.
+model Part {
+  id   Int    @id @default(autoincrement())
+  kind String
+  name String @unique
+
+  owned      OwnedPart[]
+  buildParts BuildPart[]
+  wishlist   WishlistItem[]
+}
+
+model OwnedPart {
+  id       Int  @id @default(autoincrement())
+  partId   Int
+  quantity Int
+  part     Part @relation(fields: [partId], references: [id])
+}
+
+model Build {
+  id    Int         @id @default(autoincrement())
+  name  String
+  parts BuildPart[]
+}
+
+model BuildPart {
+  id      Int   @id @default(autoincrement())
+  buildId Int
+  partId  Int
+  build   Build @relation(fields: [buildId], references: [id])
+  part    Part  @relation(fields: [partId], references: [id])
+}
+
+model WishlistItem {
+  id     Int    @id @default(autoincrement())
+  partId Int
+  note   String
+  part   Part   @relation(fields: [partId], references: [id])
+}

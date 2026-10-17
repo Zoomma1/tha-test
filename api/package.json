@@ -1,0 +1,36 @@
+{
+  "name": "@tha-test/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "prisma generate && (npm run build:types || true)",
+    "typecheck": "tsc --noEmit",
+    "db:reset": "tsx scripts/db-reset.ts",
+    "pretest": "DATABASE_URL=file:./test.db npm run db:reset",
+    "test": "vitest run",
+    "dev": "tsx watch src/server.ts",
+    "prebuild": "prisma generate",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "build:types": "tsc -p tsconfig.types.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.5",
+    "@hono/zod-validator": "0.9.1",
+    "@prisma/adapter-libsql": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "hono": "4.13.13",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "prisma": "7.10.0",
+    "tsx": "4.23.15",
+    "vitest": "5.0.4"
+  },
+  "exports": {
+    "./app-type": {
+      "types": "./dist/types/app.d.ts"
+    }
+  }
+}

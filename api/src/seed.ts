@@ -1,0 +1,17 @@
+import type { PrismaClient } from "./generated/client.js";
+import { SEED_BUILD, SEED_OWNED, SEED_PARTS, SEED_WISHLIST } from "./seed-data.js";
+
+export async function seed(db: PrismaClient): Promise<void> {
+  await db.part.createMany({ data: [...SEED_PARTS] });
+  const parts = await db.part.findMany();
+  const idOf = (name: string): number => {
+    const part = parts.find((p) => p.name === name);
+    if (part === undefined) throw new Error(`pièce de seed inconnue : ${name}`);
+    return part.id;
+  };
+
+  await db.ownedPart.createMany({ data: SEED_OWNED.map((o) => ({ partId: idOf(o.partName), quantity: o.quantity })) });
+  const build = await db.build.create({ data: { name: SEED_BUILD.name } });
+  await db.buildPart.createMany({ data: SEED_BUILD.partNames.map((n) => ({ buildId: build.id, partId: idOf(n) })) });
+  await db.wishlistItem.createMany({ data: SEED_WISHLIST.map((w) => ({ partId: idOf(w.partName), note: w.note })) });
+}

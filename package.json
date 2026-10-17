@@ -1,0 +1,25 @@
+{
+  "name": "tha-test",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "workspaces": ["web", "api"],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "test": "node --test \"scripts/*.test.mjs\" && npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "canary": "node scripts/canary.mjs",
+    "check-pins": "node scripts/check-pins.mjs",
+    "db:reset": "npm run db:reset -w api"
+  },
+  "devDependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "4.8.1",
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2"
+  }
+}

@@ -1,0 +1,40 @@
+-- CreateTable
+CREATE TABLE "Part" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "kind" TEXT NOT NULL,
+    "name" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "OwnedPart" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "partId" INTEGER NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    CONSTRAINT "OwnedPart_partId_fkey" FOREIGN KEY ("partId") REFERENCES "Part" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Build" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "BuildPart" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "buildId" INTEGER NOT NULL,
+    "partId" INTEGER NOT NULL,
+    CONSTRAINT "BuildPart_buildId_fkey" FOREIGN KEY ("buildId") REFERENCES "Build" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "BuildPart_partId_fkey" FOREIGN KEY ("partId") REFERENCES "Part" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "WishlistItem" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "partId" INTEGER NOT NULL,
+    "note" TEXT NOT NULL,
+    CONSTRAINT "WishlistItem_partId_fkey" FOREIGN KEY ("partId") REFERENCES "Part" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Part_name_key" ON "Part"("name");
