@@ -11,9 +11,10 @@ datasource db {
 
 // kind vaut "blade" | "ratchet" | "bit" : SQLite n'a pas d'enum, zod valide à la frontière.
 model Part {
-  id   Int    @id @default(autoincrement())
-  kind String
-  name String @unique
+  id          Int    @id @default(autoincrement())
+  kind        String
+  name        String @unique
+  weightGrams Int?
 
   owned      OwnedPart[]
   buildParts BuildPart[]
