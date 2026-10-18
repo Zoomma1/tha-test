@@ -9,3 +9,11 @@ export async function loadParts(api: Api, kind?: PartKind) {
   if (!res.ok) throw new HttpError(res.status);
   return res.json();
 }
+
+// Renvoie null quand la pièce n'existe pas (404), pour que la page l'affiche sans passer par l'erreur générique.
+export async function loadPart(api: Api, id: string) {
+  const res = await api.api.parts[":id"].$get({ param: { id } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new HttpError(res.status);
+  return res.json();
+}
