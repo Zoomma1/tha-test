@@ -13,13 +13,14 @@ export function PartDetail() {
 
   return (
     <section>
+      <h1 data-part-id={id}>Part detail</h1>
       <Async state={state}>
         {(part) =>
           part === null ? (
             <p>Part not found</p>
           ) : (
             <>
-              <h1>{part.name}</h1>
+              <h2>{part.name}</h2>
               <p className="kind">{KIND_LABELS[part.kind]}</p>
             </>
           )
