@@ -22,7 +22,7 @@ model Part {
 
 model OwnedPart {
   id       Int  @id @default(autoincrement())
-  partId   Int
+  partId   Int  @unique
   quantity Int
   part     Part @relation(fields: [partId], references: [id])
 }
