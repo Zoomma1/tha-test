@@ -21,7 +21,7 @@ export function Builds() {
                   <h2>{b.name}</h2>
                   <ul>
                     {b.parts.map((p) => (
-                      <li key={p.id}>{p.part.name}</li>
+                      <li key={p.id}>{p.name}</li>
                     ))}
                   </ul>
                 </li>
