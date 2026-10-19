@@ -8,3 +8,9 @@ export async function loadWishlist(api: Api) {
   if (status !== 200) throw new HttpError(status);
   return res.json();
 }
+
+export async function removeWishlistItem(api: Api, id: number) {
+  const res = await api.api.wishlist[":id"].$delete({ param: { id: String(id) } });
+  const status: number = res.status;
+  if (status !== 204 && status !== 200) throw new HttpError(status);
+}
