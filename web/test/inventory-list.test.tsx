@@ -2,19 +2,20 @@ import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { fakeApi, renderApp, type Handler } from "./helpers";
 
+// Forme réelle de GET /api/owned-parts : la pièce est imbriquée sous `part`.
 // Lignes possédées du seed : nom, type affiché (libellés de la page Parts) et quantité.
 interface OwnedRow {
   id: number;
-  kind: "blade" | "ratchet" | "bit";
-  name: string;
+  partId: number;
   quantity: number;
+  part: { id: number; kind: "blade" | "ratchet" | "bit"; name: string };
 }
 
 const seedRows: OwnedRow[] = [
-  { id: 1, kind: "blade", name: "Dran Sword", quantity: 1 },
-  { id: 2, kind: "blade", name: "Hells Scythe", quantity: 1 },
-  { id: 3, kind: "ratchet", name: "3-60", quantity: 2 },
-  { id: 4, kind: "bit", name: "Flat", quantity: 1 },
+  { id: 1, partId: 1, quantity: 1, part: { id: 1, kind: "blade", name: "Dran Sword" } },
+  { id: 2, partId: 2, quantity: 1, part: { id: 2, kind: "blade", name: "Hells Scythe" } },
+  { id: 3, partId: 3, quantity: 2, part: { id: 3, kind: "ratchet", name: "3-60" } },
+  { id: 4, partId: 4, quantity: 1, part: { id: 4, kind: "bit", name: "Flat" } },
 ];
 
 // Imite GET /api/owned-parts : la liste donnée, ou une erreur 500 si on le demande.
