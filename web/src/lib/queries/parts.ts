@@ -3,8 +3,12 @@ import { HttpError } from "../use-load";
 
 export type PartKind = "blade" | "ratchet" | "bit";
 
-export async function loadParts(api: Api, kind?: PartKind) {
-  const res = await api.api.parts.$get({ query: kind === undefined ? {} : { kind } });
+export async function loadParts(api: Api, kind?: PartKind, search?: string) {
+  const query = {
+    ...(kind === undefined ? {} : { kind }),
+    ...(search === undefined || search === "" ? {} : { search }),
+  };
+  const res = await api.api.parts.$get({ query });
   // Le type de hc ne documente que 200 et l'erreur de validation : un proxy peut aussi répondre 5xx.
   if (!res.ok) throw new HttpError(res.status);
   return res.json();
