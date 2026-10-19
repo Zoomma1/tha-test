@@ -15,6 +15,10 @@ const addOwnedPartSchema = z.object({
   quantity: z.number().int().min(1).max(99),
 });
 
+const updateOwnedPartSchema = z.object({
+  quantity: z.number().int().min(1).max(99),
+});
+
 const MAX_QUANTITY = 99;
 
 type OwnedRow = {
@@ -67,4 +71,21 @@ export const ownedPartsRoutes = new Hono()
       include: { part: true },
     });
     return c.json(toBody(row), 201);
+  })
+  .patch("/:id", async (c) => {
+    const json: unknown = await c.req.json().catch(() => null);
+    const parsed = updateOwnedPartSchema.safeParse(json);
+    if (!parsed.success) return c.json({ error: "invalid body" }, 400);
+
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "owned part not found" }, 404);
+    const existing = await db.ownedPart.findUnique({ where: { id } });
+    if (!existing) return c.json({ error: "owned part not found" }, 404);
+
+    const row = await db.ownedPart.update({
+      where: { id },
+      data: { quantity: parsed.data.quantity },
+      include: { part: true },
+    });
+    return c.json(toBody(row), 200);
   });
