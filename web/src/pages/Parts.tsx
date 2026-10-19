@@ -1,16 +1,22 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useApi } from "../api-context";
 import { Async } from "../lib/Async";
 import { loadParts, type PartKind } from "../lib/queries/parts";
 import { useLoad } from "../lib/use-load";
 
-const KIND_LABELS: Record<PartKind, string> = { blade: "Lame", ratchet: "Ratchet", bit: "Bit" };
+const KIND_LABELS: Record<PartKind, string> = {
+  blade: "Lame",
+  ratchet: "Ratchet",
+  bit: "Bit",
+};
 const KINDS: readonly PartKind[] = ["blade", "ratchet", "bit"];
 
 export function Parts() {
   const api = useApi();
   const [kind, setKind] = useState<PartKind | undefined>(undefined);
-  const { state } = useLoad(() => loadParts(api, kind), [kind]);
+  const [search, setSearch] = useState("");
+  const { state } = useLoad(() => loadParts(api, kind, search), [kind, search]);
 
   return (
     <section>
@@ -32,16 +38,31 @@ export function Parts() {
           ))}
         </select>
       </label>
+      <label>
+        Search
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+        />
+      </label>
       <Async state={state}>
-        {(parts) => (
-          <ul className="cards">
-            {parts.map((p) => (
-              <li key={p.id}>
-                {p.name} <span className="kind">{KIND_LABELS[p.kind]}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        {(parts) =>
+          parts.length === 0 ? (
+            <p>No part found</p>
+          ) : (
+            <ul className="cards">
+              {parts.map((p) => (
+                <li key={p.id}>
+                  <Link to={`/parts/${String(p.id)}`}>{p.name}</Link>{" "}
+                  <span className="kind">{KIND_LABELS[p.kind]}</span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
       </Async>
     </section>
   );
