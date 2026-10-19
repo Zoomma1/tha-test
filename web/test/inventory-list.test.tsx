@@ -50,8 +50,10 @@ describe("Inventory", () => {
     const { api, requests } = fakeApi(ownedHandler());
     renderApp(api, "/inventory");
     await screen.findByRole("row", { name: /Dran Sword/ });
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ method: "GET", path: "/api/owned-parts" });
+    // La page peut aussi charger d'autres listes (ex. les pièces du formulaire d'ajout) : on ne compte que celle-ci.
+    const ownedRequests = requests.filter((r) => r.path === "/api/owned-parts");
+    expect(ownedRequests).toHaveLength(1);
+    expect(ownedRequests[0]).toMatchObject({ method: "GET", path: "/api/owned-parts" });
   });
 
   it("shows No part owned yet when the list is empty", async () => {
