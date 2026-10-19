@@ -2,11 +2,12 @@ import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { fakeApi, renderApp, type Handler } from "./helpers";
 
-// Forme supposée de GET /api/builds : chaque build porte ses pièces, chacune nommée sous `part`.
+// Forme de GET /api/builds : chaque build porte ses pièces à plat (`id`, `kind`, `name`).
 // Le build du seed (nom et pièces) est reproduit ici ; les pièces viennent du catalogue de helpers.ts.
 interface BuildPart {
   id: number;
-  part: { id: number; kind: "blade" | "ratchet" | "bit"; name: string };
+  kind: "blade" | "ratchet" | "bit";
+  name: string;
 }
 
 interface Build {
@@ -17,11 +18,11 @@ interface Build {
 
 const seedBuild: Build = {
   id: 1,
-  name: "Starter build",
+  name: "Dran Sword 3-60 Flat",
   parts: [
-    { id: 1, part: { id: 1, kind: "blade", name: "Dran Sword" } },
-    { id: 2, part: { id: 3, kind: "ratchet", name: "3-60" } },
-    { id: 3, part: { id: 4, kind: "bit", name: "Flat" } },
+    { id: 1, kind: "blade", name: "Dran Sword" },
+    { id: 3, kind: "ratchet", name: "3-60" },
+    { id: 4, kind: "bit", name: "Flat" },
   ],
 };
 
@@ -38,14 +39,14 @@ describe("Builds", () => {
     const { api } = fakeApi(buildsHandler());
     renderApp(api, "/builds");
     expect(screen.getByRole("status")).toHaveTextContent("Loading");
-    expect(await screen.findByText("Starter build")).toBeInTheDocument();
+    expect(await screen.findByText("Dran Sword 3-60 Flat")).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("lists the seed build with the names of its parts", async () => {
     const { api } = fakeApi(buildsHandler());
     renderApp(api, "/builds");
-    expect(await screen.findByText("Starter build")).toBeInTheDocument();
+    expect(await screen.findByText("Dran Sword 3-60 Flat")).toBeInTheDocument();
     for (const name of ["Dran Sword", "3-60", "Flat"]) {
       expect(screen.getByText(name)).toBeInTheDocument();
     }
@@ -54,7 +55,7 @@ describe("Builds", () => {
   it("requests the builds from the API", async () => {
     const { api, requests } = fakeApi(buildsHandler());
     renderApp(api, "/builds");
-    await screen.findByText("Starter build");
+    await screen.findByText("Dran Sword 3-60 Flat");
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({ method: "GET", path: "/api/builds" });
   });
