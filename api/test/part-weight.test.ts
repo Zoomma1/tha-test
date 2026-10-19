@@ -100,10 +100,10 @@ describe("seeded part weights", () => {
 });
 
 describe("GET /api/parts after the weight column", () => {
-  it("returns only id, kind and name for every part", async () => {
+  it("returns id, kind, name and weightGrams for every part", async () => {
     const res = await get("/api/parts");
     expect(res.status).toBe(200);
-    const body = await readJson(res, z.array(partSchema.strict()));
+    const body = await readJson(res, z.array(partSchema.extend({ weightGrams: z.number().int().nullable() }).strict()));
     expect(body.length).toBeGreaterThan(0);
   });
 });
