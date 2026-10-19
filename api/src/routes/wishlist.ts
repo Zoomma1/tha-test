@@ -39,4 +39,12 @@ export const wishlistRoutes = new Hono()
 
     const row = await db.wishlistItem.create({ data: { partId, note }, include });
     return c.json(wishlistItemSchema.parse(row), 201);
+  })
+  .delete("/:id", async (c) => {
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "wishlist item not found" }, 404);
+    const existing = await db.wishlistItem.findUnique({ where: { id } });
+    if (!existing) return c.json({ error: "wishlist item not found" }, 404);
+    await db.wishlistItem.delete({ where: { id } });
+    return c.body(null, 204);
   });
