@@ -10,6 +10,7 @@ const buildSchema = z.object({
 });
 
 const createBuildSchema = z.object({ name: z.string().trim().min(1) });
+const addPartSchema = z.object({ partId: z.number().int() });
 
 export const buildsRoutes = new Hono()
   .get("/", async (c) => {
@@ -39,4 +40,32 @@ export const buildsRoutes = new Hono()
     }
     const row = await db.build.create({ data: { name } });
     return c.json(buildSchema.parse({ id: row.id, name: row.name, parts: [] }), 201);
+  })
+  .post("/:id/parts", async (c) => {
+    const id = Number(c.req.param("id"));
+    const json: unknown = await c.req.json().catch(() => null);
+    const parsed = addPartSchema.safeParse(json);
+    if (!parsed.success) return c.json({ error: "invalid partId" }, 400);
+    const { partId } = parsed.data;
+
+    const build = Number.isInteger(id)
+      ? await db.build.findUnique({
+          where: { id },
+          include: { parts: { orderBy: { id: "asc" }, include: { part: true } } },
+        })
+      : null;
+    if (build === null) return c.json({ error: "build not found" }, 404);
+    const part = await db.part.findUnique({ where: { id: partId } });
+    if (part === null) return c.json({ error: "part not found" }, 404);
+
+    if (build.parts.some((bp) => bp.part.kind === part.kind)) {
+      return c.json({ error: "slot taken" }, 409);
+    }
+    await db.buildPart.create({ data: { buildId: build.id, partId: part.id } });
+    const body = buildSchema.parse({
+      id: build.id,
+      name: build.name,
+      parts: [...build.parts.map((bp) => bp.part), part].map((p) => ({ id: p.id, kind: p.kind, name: p.name })),
+    });
+    return c.json(body, 201);
   });
