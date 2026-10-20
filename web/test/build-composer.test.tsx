@@ -96,6 +96,9 @@ function serverWith(faults: Faults = {}) {
       return Response.json(build, { status: 201 });
     }
 
+    // Pas de pièce manquante dans ces tests : la page charge ces listes sans rien afficher.
+    if (req.method === "GET" && /^\/api\/builds\/\d+\/missing$/.test(path)) return Response.json([]);
+
     return new Response("not found", { status: 404 });
   };
 
@@ -132,7 +135,7 @@ async function addToBuild(buildName: string, partName: string) {
   const combobox = within(item).getByRole("combobox", { name: /part/i });
   await within(combobox).findByRole("option", { name: partName });
   await userEvent.selectOptions(combobox, partName);
-  await userEvent.click(within(item).getByRole("button", { name: /add/i }));
+  await userEvent.click(within(item).getByRole("button", { name: "Add" }));
 }
 
 describe("Build composer", () => {
