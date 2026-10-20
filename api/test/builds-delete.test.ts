@@ -8,6 +8,7 @@ import { get, partSchema, readJson } from "./helpers.js";
 const buildSchema = z.object({
   id: z.number(),
   name: z.string(),
+  notes: z.string().nullable(),
   parts: z.array(partSchema),
 });
 
@@ -74,7 +75,7 @@ describe("DELETE /api/builds/:id: suppression (204)", () => {
     expect((await deleteBuild(removed.id)).status).toBe(204);
 
     expect(await listedBuild(removed.id)).toBeUndefined();
-    expect(await listedBuild(kept.id)).toEqual({ id: kept.id, name: kept.name, parts: [] });
+    expect(await listedBuild(kept.id)).toEqual({ id: kept.id, name: kept.name, notes: null, parts: [] });
   });
 
   it("deletes a build that holds parts without a foreign key error", async () => {
@@ -117,7 +118,7 @@ describe("DELETE /api/builds/:id: suppression (204)", () => {
     expect((await deleteBuild(removed.id)).status).toBe(204);
 
     expect(await listedBuild(removed.id)).toBeUndefined();
-    expect(await listedBuild(other.id)).toEqual({ id: other.id, name: other.name, parts: [part] });
+    expect(await listedBuild(other.id)).toEqual({ id: other.id, name: other.name, notes: null, parts: [part] });
   });
 
   it("a deleted build cannot be targeted anymore", async () => {
