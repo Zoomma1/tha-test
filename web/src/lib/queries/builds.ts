@@ -12,7 +12,7 @@ export async function loadBuilds(api: Api) {
 export class BuildApiError extends Error {}
 
 // Lève BuildApiError avec le message de l'API (ex. 409 `slot taken`), HttpError pour tout autre échec.
-async function failWith(res: Response): Promise<never> {
+export async function failWith(res: Response): Promise<never> {
   const body: unknown = await res.json().catch(() => null);
   if (typeof body === "object" && body !== null && "error" in body && typeof body.error === "string") {
     throw new BuildApiError(body.error);
@@ -35,4 +35,16 @@ export async function addBuildPart(api: Api, buildId: number, partId: number) {
   const status: number = res.status;
   if (status === 200 || status === 201) return;
   return failWith(res);
+}
+
+export async function loadBuildMissing(api: Api, buildId: number) {
+  const res = await api.api.builds[":id"].missing.$get({ param: { id: String(buildId) } });
+  if (res.status !== 200) return failWith(res);
+  return res.json();
+}
+
+// Les pièces manquantes de chaque build, indexées par id de build.
+export async function loadMissingByBuild(api: Api, buildIds: number[]) {
+  const lists = await Promise.all(buildIds.map((id) => loadBuildMissing(api, id)));
+  return new Map(buildIds.map((id, i) => [id, lists[i] ?? []]));
 }

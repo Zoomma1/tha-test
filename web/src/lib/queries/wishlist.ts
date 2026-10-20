@@ -1,4 +1,5 @@
 import type { Api } from "../api-client";
+import { failWith } from "./builds";
 import { HttpError } from "../use-load";
 
 export async function loadWishlist(api: Api) {
@@ -19,4 +20,11 @@ export async function addWishlistItem(api: Api, partId: number, note: string, pr
   const res = await api.api.wishlist.$post({ json: { partId, note, priority } });
   const status: number = res.status;
   if (status !== 200 && status !== 201) throw new HttpError(status);
+}
+
+export async function addMissingToWishlist(api: Api, buildId: number) {
+  const res = await api.api.wishlist["from-build"][":buildId"].$post({ param: { buildId: String(buildId) } });
+  const status: number = res.status;
+  if (status === 200 || status === 201) return;
+  return failWith(res);
 }
