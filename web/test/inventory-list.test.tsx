@@ -40,9 +40,10 @@ describe("Inventory", () => {
     ];
     for (const [name, type, quantity] of expected) {
       const row = await screen.findByRole("row", { name: new RegExp(name) });
-      expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([name, type, quantity]);
+      // Les trois premières cellules : nom, type, quantité (la 4ᵉ porte les boutons d'action).
+      expect(within(row).getAllByRole("cell").slice(0, 3).map((cell) => cell.textContent)).toEqual([name, type, quantity]);
     }
-    expect(screen.getAllByRole("cell")).toHaveLength(12);
+    expect(screen.getAllByRole("cell")).toHaveLength(16);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
