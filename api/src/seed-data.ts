@@ -47,3 +47,14 @@ export const SEED_WISHLIST: readonly { partName: string; note: string }[] = [
   { partName: "Wizard Arrow", note: "Pour une build défensive" },
   { partName: "Rush", note: "À tester en attaque" },
 ];
+
+export const SEED_USERS: readonly { handle: string; displayName: string }[] = [
+  { handle: "me", displayName: "Moi" },
+  { handle: "alice", displayName: "Alice" },
+  { handle: "bob", displayName: "Bob" },
+  { handle: "carol", displayName: "Carol" },
+  { handle: "dave", displayName: "Dave" },
+];
+
+// Identifiants de démonstration, volontairement écrits dans ce dépôt public.
+export const DEMO_PASSWORD = "demo-password-1";

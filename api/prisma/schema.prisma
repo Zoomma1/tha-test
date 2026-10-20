@@ -50,3 +50,20 @@ model WishlistItem {
   priority Int    @default(0)
   part     Part   @relation(fields: [partId], references: [id])
 }
+
+model User {
+  id           Int       @id @default(autoincrement())
+  handle       String    @unique
+  displayName  String
+  bio          String?
+  passwordHash String
+  sessions     Session[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
