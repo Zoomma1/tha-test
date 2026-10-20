@@ -88,4 +88,13 @@ export const ownedPartsRoutes = new Hono()
       include: { part: true },
     });
     return c.json(toBody(row), 200);
+  })
+  .delete("/:id", async (c) => {
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "owned part not found" }, 404);
+    const existing = await db.ownedPart.findUnique({ where: { id } });
+    if (!existing) return c.json({ error: "owned part not found" }, 404);
+
+    await db.ownedPart.delete({ where: { id } });
+    return c.body(null, 204);
   });
