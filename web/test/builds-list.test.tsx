@@ -56,8 +56,10 @@ describe("Builds", () => {
     const { api, requests } = fakeApi(buildsHandler());
     renderApp(api, "/builds");
     await screen.findByText("Dran Sword 3-60 Flat");
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ method: "GET", path: "/api/builds" });
+    // La page charge aussi les pièces pour son composeur : on ne compte que les requêtes de builds.
+    const buildRequests = requests.filter((r) => r.path === "/api/builds");
+    expect(buildRequests).toHaveLength(1);
+    expect(buildRequests[0]).toMatchObject({ method: "GET", path: "/api/builds" });
   });
 
   it("shows No build yet when there is no build", async () => {
