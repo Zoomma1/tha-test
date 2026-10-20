@@ -70,6 +70,9 @@ function serverWith(faults: Faults = {}) {
 
     if (req.method === "GET" && path === "/api/builds") return Response.json(builds);
 
+    // La page demande aussi les pièces manquantes de chaque build : ce test ne porte pas dessus, aucune n'est manquante.
+    if (req.method === "GET" && /^\/api\/builds\/\d+\/missing$/.test(path)) return Response.json([]);
+
     if (req.method === "POST" && path === "/api/builds") {
       if (faults.createBuild !== undefined) return new Response("boom", { status: faults.createBuild });
       const body: unknown = JSON.parse(await req.text());
@@ -132,7 +135,8 @@ async function addToBuild(buildName: string, partName: string) {
   const combobox = within(item).getByRole("combobox", { name: /part/i });
   await within(combobox).findByRole("option", { name: partName });
   await userEvent.selectOptions(combobox, partName);
-  await userEvent.click(within(item).getByRole("button", { name: /add/i }));
+  // Nom exact : le bouton « Add missing to wishlist » est aussi dans l'élément du build.
+  await userEvent.click(within(item).getByRole("button", { name: "Add" }));
 }
 
 describe("Build composer", () => {
