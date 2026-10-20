@@ -9,6 +9,7 @@ import { get, partSchema, readJson } from "./helpers.js";
 const buildSchema = z.object({
   id: z.number(),
   name: z.string(),
+  notes: z.string().nullable(),
   parts: z.array(partSchema),
 });
 
@@ -68,7 +69,7 @@ describe("POST /api/builds/:id/parts: ajout (201)", () => {
     const res = await addPart(build.id, part.id);
     expect(res.status).toBe(201);
     const body = await readJson(res, buildSchema);
-    expect(body).toEqual({ id: build.id, name: build.name, parts: [part] });
+    expect(body).toEqual({ id: build.id, name: build.name, notes: null, parts: [part] });
   });
 
   it("returns the same build that the list shows afterwards", async () => {
@@ -97,7 +98,7 @@ describe("POST /api/builds/:id/parts: ajout (201)", () => {
     const res = await addPart(second.id, part.id);
     expect(res.status).toBe(201);
     const body = await readJson(res, buildSchema);
-    expect(body).toEqual({ id: second.id, name: second.name, parts: [part] });
+    expect(body).toEqual({ id: second.id, name: second.name, notes: null, parts: [part] });
     expect((await listedBuild(first.id))?.parts).toEqual([part]);
   });
 });

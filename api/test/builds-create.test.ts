@@ -9,6 +9,7 @@ import { get, readJson } from "./helpers.js";
 const buildSchema = z.object({
   id: z.number(),
   name: z.string(),
+  notes: z.string().nullable(),
   parts: z.array(z.object({ id: z.number(), kind: z.string(), name: z.string() })),
 });
 
@@ -59,7 +60,7 @@ describe("POST /api/builds: création (201)", () => {
     const name = `Build listé ${randomUUID()}`;
     const created = await readJson(await postCreated({ name }), buildSchema);
     const listed = (await readJson(await get("/api/builds"), listSchema)).find((b) => b.id === created.id);
-    expect(listed).toEqual({ id: created.id, name, parts: [] });
+    expect(listed).toEqual({ id: created.id, name, notes: null, parts: [] });
   });
 
   it("trims the name before storing and returning it", async () => {

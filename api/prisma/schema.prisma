@@ -31,6 +31,7 @@ model OwnedPart {
 model Build {
   id    Int         @id @default(autoincrement())
   name  String
+  notes String?
   parts BuildPart[]
 }
 
