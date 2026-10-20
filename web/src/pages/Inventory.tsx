@@ -1,7 +1,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { useApi } from "../api-context";
 import { Async } from "../lib/Async";
-import { addOwnedPart, ApiError, loadOwnedParts } from "../lib/queries/owned-parts";
+import { addOwnedPart, ApiError, deleteOwnedPart, loadOwnedParts, updateOwnedPart } from "../lib/queries/owned-parts";
 import { loadParts } from "../lib/queries/parts";
 import { describeError, useLoad } from "../lib/use-load";
 
@@ -30,6 +30,21 @@ export function Inventory() {
       },
       (error: unknown) => {
         setPending(false);
+        setAddError(error instanceof ApiError ? error.message : describeError(error));
+      },
+    );
+  };
+
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+
+  const run = (action: Promise<void>) => {
+    setAddError(null);
+    action.then(
+      () => {
+        setDrafts({});
+        reload();
+      },
+      (error: unknown) => {
         setAddError(error instanceof ApiError ? error.message : describeError(error));
       },
     );
@@ -84,6 +99,7 @@ export function Inventory() {
                   <th>Name</th>
                   <th>Type</th>
                   <th>Quantity</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,6 +108,34 @@ export function Inventory() {
                     <td>{r.part.name}</td>
                     <td>{KIND_LABELS[r.part.kind]}</td>
                     <td>{r.quantity}</td>
+                    <td>
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        aria-label={`Quantity of ${r.part.name}`}
+                        value={drafts[r.id] ?? String(r.quantity)}
+                        onChange={(e) => {
+                          setDrafts({ ...drafts, [r.id]: e.target.value });
+                        }}
+                      />{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          run(updateOwnedPart(api, r.id, Number(drafts[r.id] ?? r.quantity)));
+                        }}
+                      >
+                        Save {r.part.name}
+                      </button>{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          run(deleteOwnedPart(api, r.id));
+                        }}
+                      >
+                        Delete {r.part.name}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
