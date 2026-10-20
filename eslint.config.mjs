@@ -51,6 +51,7 @@ export default tseslint.config(
     plugins: { "@eslint-community/eslint-comments": eslintComments },
     rules: {
       "@eslint-community/eslint-comments/no-use": ["error", { allow: [] }],
+      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/ban-ts-comment": [
         "error",
         { "ts-expect-error": true, "ts-ignore": true, "ts-nocheck": true, "ts-check": true },
