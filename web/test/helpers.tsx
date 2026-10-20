@@ -8,10 +8,10 @@ import { createApi, type Api, type FetchImpl } from "../src/lib/api-client";
 export type Part = InferResponseType<Api["api"]["parts"]["$get"], 200>[number];
 
 export const parts: Part[] = [
-  { id: 1, kind: "blade", name: "Dran Sword" },
-  { id: 2, kind: "blade", name: "Hells Scythe" },
-  { id: 3, kind: "ratchet", name: "3-60" },
-  { id: 4, kind: "bit", name: "Flat" },
+  { id: 1, kind: "blade", name: "Dran Sword", weightGrams: 30 },
+  { id: 2, kind: "blade", name: "Hells Scythe", weightGrams: 33 },
+  { id: 3, kind: "ratchet", name: "3-60", weightGrams: 8 },
+  { id: 4, kind: "bit", name: "Flat", weightGrams: 2 },
 ];
 
 export interface RecordedRequest {

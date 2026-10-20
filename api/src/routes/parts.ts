@@ -20,12 +20,12 @@ export const partsRoutes = new Hono()
       orderBy: [{ kind: "asc" }, { id: "asc" }],
     });
     // La colonne est un String : on revalide pour que le type exposé au front soit l'union, pas string.
-    return c.json(parts.map((p) => ({ id: p.id, kind: partKindSchema.parse(p.kind), name: p.name })), 200);
+    return c.json(parts.map((p) => ({ id: p.id, kind: partKindSchema.parse(p.kind), name: p.name, weightGrams: p.weightGrams })), 200);
   })
   .get("/:id", async (c) => {
     const parsed = partIdParam.safeParse(c.req.param("id"));
     if (!parsed.success) return c.json({ error: "invalid id" }, 400);
     const part = await db.part.findUnique({ where: { id: parsed.data } });
     if (part === null) return c.json({ error: "part not found" }, 404);
-    return c.json({ id: part.id, kind: partKindSchema.parse(part.kind), name: part.name }, 200);
+    return c.json({ id: part.id, kind: partKindSchema.parse(part.kind), name: part.name, weightGrams: part.weightGrams }, 200);
   });
