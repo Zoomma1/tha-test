@@ -20,3 +20,13 @@ export async function addWishlistItem(api: Api, partId: number, note: string, pr
   const status: number = res.status;
   if (status !== 200 && status !== 201) throw new HttpError(status);
 }
+
+// Renvoie le message d'erreur de l'API (corps JSON { error }) ou null si l'ajout a réussi.
+export async function addPartToWishlist(api: Api, partId: number): Promise<string | null> {
+  const res = await api.api.wishlist.$post({ json: { partId, note: "", priority: 0 } });
+  const status: number = res.status;
+  if (status === 200 || status === 201) return null;
+  const body: unknown = await res.json().catch(() => null);
+  if (typeof body === "object" && body !== null && "error" in body && typeof body.error === "string") return body.error;
+  throw new HttpError(status);
+}
