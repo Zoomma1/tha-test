@@ -42,6 +42,25 @@ export const wishlistRoutes = new Hono()
     const row = await db.wishlistItem.create({ data: { partId, note, priority }, include });
     return c.json(wishlistItemSchema.parse(row), 201);
   })
+  .post("/from-build/:buildId", async (c) => {
+    const buildId = Number(c.req.param("buildId"));
+    if (!Number.isInteger(buildId)) return c.json({ error: "build not found" }, 404);
+    const build = await db.build.findUnique({ where: { id: buildId } });
+    if (!build) return c.json({ error: "build not found" }, 404);
+
+    const buildParts = await db.buildPart.findMany({ where: { buildId } });
+    const partIds = [...new Set(buildParts.map((row) => row.partId))];
+    const owned = await db.ownedPart.findMany({ where: { partId: { in: partIds } } });
+    const listed = await db.wishlistItem.findMany({ where: { partId: { in: partIds } } });
+    const skip = new Set([...owned, ...listed].map((row) => row.partId));
+
+    const added = [];
+    for (const partId of partIds) {
+      if (skip.has(partId)) continue;
+      added.push(await db.wishlistItem.create({ data: { partId, note: "", priority: 0 }, include }));
+    }
+    return c.json(z.array(wishlistItemSchema).parse(added), 201);
+  })
   .delete("/:id", async (c) => {
     const id = Number(c.req.param("id"));
     if (!Number.isInteger(id)) return c.json({ error: "wishlist item not found" }, 404);
