@@ -201,8 +201,8 @@ describe("POST /api/auth/register: handle déjà pris (409)", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("answers 409 handle taken for the seeded handle me", async () => {
-    const res = await postRegister({ handle: "me", password: PASSWORD });
+  it("answers 409 handle taken for the seeded handle alice", async () => {
+    const res = await postRegister({ handle: "alice", password: PASSWORD });
     expect(res.status).toBe(409);
     expect(await readJson(res, errorSchema)).toEqual({ error: "handle taken" });
   });
