@@ -36,3 +36,12 @@ export async function addBuildPart(api: Api, buildId: number, partId: number) {
   if (status === 200 || status === 201) return;
   return failWith(res);
 }
+
+export async function loadBuildMissing(api: Api, buildId: number) {
+  const res = await api.api.builds[":id"].missing.$get({ param: { id: String(buildId) } });
+  const status: number = res.status;
+  if (status !== 200) return failWith(res);
+  const body = await res.json();
+  if (!Array.isArray(body)) throw new HttpError(status);
+  return body;
+}

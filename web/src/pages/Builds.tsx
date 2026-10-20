@@ -1,8 +1,9 @@
 import { useState, type SyntheticEvent } from "react";
 import { useApi } from "../api-context";
 import type { Api } from "../lib/api-client";
-import { addBuildPart, BuildApiError, createBuild, loadBuilds } from "../lib/queries/builds";
+import { addBuildPart, BuildApiError, createBuild, loadBuildMissing, loadBuilds } from "../lib/queries/builds";
 import { loadParts } from "../lib/queries/parts";
+import { addMissingToWishlist } from "../lib/queries/wishlist";
 import { describeError, useLoad } from "../lib/use-load";
 
 type PartOption = { id: number; name: string };
@@ -66,6 +67,53 @@ function BuildComposer({
       </button>
       {error !== null && <p role="alert">{error}</p>}
     </form>
+  );
+}
+
+function BuildMissing({ api, buildId }: { api: Api; buildId: number }) {
+  const { state } = useLoad(() => loadBuildMissing(api, buildId), [buildId]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const add = () => {
+    setError(null);
+    setConfirmed(false);
+    setPending(true);
+    addMissingToWishlist(api, buildId).then(
+      (message) => {
+        setPending(false);
+        if (message === null) setConfirmed(true);
+        else setError(message);
+      },
+      (e: unknown) => {
+        setPending(false);
+        setError(errorMessage(e));
+      },
+    );
+  };
+
+  if (state.status === "error") return <p role="alert">{state.message}</p>;
+  if (state.status !== "ready") return null;
+
+  return (
+    <>
+      {state.data.length > 0 && (
+        <>
+          <p>Missing:</p>
+          <ul>
+            {state.data.map((p) => (
+              <li key={p.id}>{p.name}</li>
+            ))}
+          </ul>
+          <button type="button" disabled={pending} onClick={add}>
+            Add missing to wishlist
+          </button>
+        </>
+      )}
+      {confirmed && <p role="status">Missing parts added to the wishlist</p>}
+      {error !== null && <p role="alert">{error}</p>}
+    </>
   );
 }
 
@@ -139,6 +187,7 @@ export function Builds() {
                     <li key={p.id}>{p.name}</li>
                   ))}
                 </ul>
+                <BuildMissing api={api} buildId={b.id} />
                 <BuildComposer api={api} buildId={b.id} parts={parts} onAdded={reload} />
               </li>
             ))}
