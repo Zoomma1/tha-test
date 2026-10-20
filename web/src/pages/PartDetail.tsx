@@ -22,6 +22,7 @@ export function PartDetail() {
             <>
               <h2>{part.name}</h2>
               <p className="kind">{KIND_LABELS[part.kind]}</p>
+              <p className="weight">{part.weightGrams === null ? "Weight unknown" : `${String(part.weightGrams)} g`}</p>
             </>
           )
         }
