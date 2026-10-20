@@ -68,4 +68,17 @@ export const buildsRoutes = new Hono()
       parts: [...build.parts.map((bp) => bp.part), part].map((p) => ({ id: p.id, kind: p.kind, name: p.name })),
     });
     return c.json(body, 201);
+  })
+  .delete("/:id/parts/:partId", async (c) => {
+    const id = Number(c.req.param("id"));
+    const partId = Number(c.req.param("partId"));
+    if (!Number.isInteger(id) || !Number.isInteger(partId)) {
+      return c.json({ error: "build part not found" }, 404);
+    }
+    const build = await db.build.findUnique({ where: { id } });
+    if (build === null) return c.json({ error: "build not found" }, 404);
+
+    const { count } = await db.buildPart.deleteMany({ where: { buildId: id, partId } });
+    if (count === 0) return c.json({ error: "part not in build" }, 404);
+    return c.body(null, 204);
   });
