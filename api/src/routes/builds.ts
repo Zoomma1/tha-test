@@ -69,6 +69,17 @@ export const buildsRoutes = new Hono()
     });
     return c.json(body, 201);
   })
+  .delete("/:id", async (c) => {
+    const id = Number(c.req.param("id"));
+    const build = Number.isInteger(id) ? await db.build.findUnique({ where: { id } }) : null;
+    if (build === null) return c.json({ error: "build not found" }, 404);
+
+    await db.$transaction([
+      db.buildPart.deleteMany({ where: { buildId: id } }),
+      db.build.delete({ where: { id } }),
+    ]);
+    return c.body(null, 204);
+  })
   .delete("/:id/parts/:partId", async (c) => {
     const id = Number(c.req.param("id"));
     const partId = Number(c.req.param("partId"));
