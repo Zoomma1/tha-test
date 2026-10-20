@@ -41,6 +41,28 @@ export const buildsRoutes = new Hono()
     const row = await db.build.create({ data: { name } });
     return c.json(buildSchema.parse({ id: row.id, name: row.name, parts: [] }), 201);
   })
+  .get("/:id/missing", async (c) => {
+    const id = Number(c.req.param("id"));
+    const build = Number.isInteger(id)
+      ? await db.build.findUnique({
+          where: { id },
+          include: { parts: { orderBy: { id: "asc" }, include: { part: true } } },
+        })
+      : null;
+    if (build === null) return c.json({ error: "build not found" }, 404);
+
+    const owned = await db.ownedPart.findMany({
+      where: { partId: { in: build.parts.map((bp) => bp.partId) } },
+      select: { partId: true },
+    });
+    const ownedIds = new Set(owned.map((o) => o.partId));
+    const body = z.array(buildSchema.shape.parts.element).parse(
+      build.parts
+        .filter((bp) => !ownedIds.has(bp.partId))
+        .map((bp) => ({ id: bp.part.id, kind: bp.part.kind, name: bp.part.name })),
+    );
+    return c.json(body, 200);
+  })
   .post("/:id/parts", async (c) => {
     const id = Number(c.req.param("id"));
     const json: unknown = await c.req.json().catch(() => null);
