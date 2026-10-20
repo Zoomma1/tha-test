@@ -6,10 +6,15 @@ import { partKindSchema } from "./parts.js";
 const buildSchema = z.object({
   id: z.number(),
   name: z.string(),
+  notes: z.string().nullable(),
   parts: z.array(z.object({ id: z.number(), kind: partKindSchema, name: z.string() })),
 });
 
 const createBuildSchema = z.object({ name: z.string().trim().min(1) });
+const updateBuildSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  notes: z.string().max(500).optional(),
+});
 const addPartSchema = z.object({ partId: z.number().int() });
 
 export const buildsRoutes = new Hono()
@@ -22,6 +27,7 @@ export const buildsRoutes = new Hono()
       rows.map((b) => ({
         id: b.id,
         name: b.name,
+        notes: b.notes,
         parts: b.parts.map((bp) => ({ id: bp.part.id, kind: bp.part.kind, name: bp.part.name })),
       })),
     );
@@ -39,7 +45,40 @@ export const buildsRoutes = new Hono()
       return c.json({ error: "build name already exists" }, 409);
     }
     const row = await db.build.create({ data: { name } });
-    return c.json(buildSchema.parse({ id: row.id, name: row.name, parts: [] }), 201);
+    return c.json(buildSchema.parse({ id: row.id, name: row.name, notes: row.notes, parts: [] }), 201);
+  })
+  .patch("/:id", async (c) => {
+    const id = Number(c.req.param("id"));
+    const json: unknown = await c.req.json().catch(() => null);
+    const parsed = updateBuildSchema.safeParse(json);
+    if (!parsed.success) return c.json({ error: "invalid body" }, 400);
+    const { name, notes } = parsed.data;
+
+    const build = Number.isInteger(id) ? await db.build.findUnique({ where: { id } }) : null;
+    if (build === null) return c.json({ error: "build not found" }, 404);
+
+    if (name !== undefined) {
+      const lower = name.toLowerCase();
+      const others = await db.build.findMany({ where: { id: { not: id } }, select: { name: true } });
+      if (others.some((b) => b.name.toLowerCase() === lower)) {
+        return c.json({ error: "build name already exists" }, 409);
+      }
+    }
+    const row = await db.build.update({
+      where: { id },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(notes !== undefined ? { notes } : {}),
+      },
+      include: { parts: { orderBy: { id: "asc" }, include: { part: true } } },
+    });
+    const body = buildSchema.parse({
+      id: row.id,
+      name: row.name,
+      notes: row.notes,
+      parts: row.parts.map((bp) => ({ id: bp.part.id, kind: bp.part.kind, name: bp.part.name })),
+    });
+    return c.json(body, 200);
   })
   .get("/:id/missing", async (c) => {
     const id = Number(c.req.param("id"));
@@ -87,6 +126,7 @@ export const buildsRoutes = new Hono()
     const body = buildSchema.parse({
       id: build.id,
       name: build.name,
+      notes: build.notes,
       parts: [...build.parts.map((bp) => bp.part), part].map((p) => ({ id: p.id, kind: p.kind, name: p.name })),
     });
     return c.json(body, 201);
