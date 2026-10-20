@@ -76,17 +76,18 @@ function serverWith(gate?: Promise<void>) {
 async function addPart(name: string, quantity: number) {
   await screen.findByRole("option", { name });
   await userEvent.selectOptions(screen.getByRole("combobox", { name: /part/i }), name);
-  const input = screen.getByRole("spinbutton", { name: /quantity/i });
+  const input = screen.getByRole("spinbutton", { name: "Quantity" });
   await userEvent.clear(input);
   await userEvent.type(input, String(quantity));
   await userEvent.click(screen.getByRole("button", { name: /add/i }));
 }
 
-// Les cellules de la ligne du tableau qui affiche le nom donné.
+// Les cellules de la ligne du tableau qui affiche le nom donné, sans la cellule d'actions.
 function rowCells(name: string): (string | null)[] {
   const row = screen.getByRole("row", { name: new RegExp(name) });
   return within(row)
     .getAllByRole("cell")
+    .slice(0, 3)
     .map((cell) => cell.textContent);
 }
 
@@ -105,7 +106,7 @@ describe("Inventory add", () => {
   it("limits the quantity field to 1 to 99", async () => {
     const { api } = serverWith();
     renderApp(api, "/inventory");
-    const input = await screen.findByRole("spinbutton", { name: /quantity/i });
+    const input = await screen.findByRole("spinbutton", { name: "Quantity" });
     expect(input).toHaveAttribute("min", "1");
     expect(input).toHaveAttribute("max", "99");
   });
