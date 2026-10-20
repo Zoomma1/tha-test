@@ -14,3 +14,9 @@ export async function removeWishlistItem(api: Api, id: number) {
   const status: number = res.status;
   if (status !== 204 && status !== 200) throw new HttpError(status);
 }
+
+export async function addWishlistItem(api: Api, partId: number, note: string, priority: number) {
+  const res = await api.api.wishlist.$post({ json: { partId, note, priority } });
+  const status: number = res.status;
+  if (status !== 200 && status !== 201) throw new HttpError(status);
+}
