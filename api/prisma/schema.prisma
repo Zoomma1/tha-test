@@ -23,16 +23,22 @@ model Part {
 
 model OwnedPart {
   id       Int  @id @default(autoincrement())
-  partId   Int  @unique
+  ownerId  Int  @default(1)
+  partId   Int
   quantity Int
+  owner    User @relation(fields: [ownerId], references: [id])
   part     Part @relation(fields: [partId], references: [id])
+
+  @@unique([ownerId, partId])
 }
 
 model Build {
-  id    Int         @id @default(autoincrement())
-  name  String
-  notes String?
-  parts BuildPart[]
+  id      Int         @id @default(autoincrement())
+  ownerId Int         @default(1)
+  name    String
+  notes   String?
+  owner   User        @relation(fields: [ownerId], references: [id])
+  parts   BuildPart[]
 }
 
 model BuildPart {
@@ -48,6 +54,8 @@ model WishlistItem {
   partId   Int
   note     String
   priority Int    @default(0)
+  ownerId  Int    @default(1)
+  owner    User   @relation(fields: [ownerId], references: [id])
   part     Part   @relation(fields: [partId], references: [id])
 }
 
@@ -58,6 +66,9 @@ model User {
   bio          String?
   passwordHash String
   sessions     Session[]
+  ownedParts   OwnedPart[]
+  builds       Build[]
+  wishlist     WishlistItem[]
 }
 
 model Session {
