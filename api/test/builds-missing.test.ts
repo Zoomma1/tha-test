@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { app } from "../src/app.js";
 import { db } from "../src/db.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const listSchema = z.array(partSchema);
 const errorSchema = z.object({ error: z.string().min(1) });
@@ -28,7 +28,7 @@ async function makePart(kind: Kind): Promise<TestPart> {
 }
 
 async function addPart(buildId: number, partId: number): Promise<Response> {
-  return app.request(`/api/builds/${String(buildId)}/parts`, {
+  return authed(`/api/builds/${String(buildId)}/parts`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ partId }),
@@ -65,7 +65,7 @@ async function makeFullBuild(owned: { blade?: boolean; ratchet?: boolean; bit?: 
 }
 
 async function missingOf(buildId: number): Promise<Response> {
-  return get(`/api/builds/${String(buildId)}/missing`);
+  return authed(`/api/builds/${String(buildId)}/missing`);
 }
 
 function byId(a: { id: number }, b: { id: number }): number {
@@ -135,7 +135,7 @@ describe("GET /api/builds/:id/missing: build inconnu (404)", () => {
   });
 
   it("returns 404 with an error for a build id that is not a number", async () => {
-    const res = await get("/api/builds/abc/missing");
+    const res = await authed("/api/builds/abc/missing");
     expect(res.status).toBe(404);
     const body = await readJson(res, errorSchema);
     expect(body.error).toBeTruthy();
