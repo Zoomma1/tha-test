@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { z } from "zod";
-import { hashPassword } from "../auth/password.js";
+import { loginLimiter } from "../auth/login-limiter.js";
+import { hashPassword, verifyPassword } from "../auth/password.js";
 import { createSession, SESSION_COOKIE, sessionCookieOptions } from "../auth/session.js";
 import { db } from "../db.js";
 
@@ -10,6 +11,14 @@ const registerSchema = z.object({
   password: z.string().min(8).max(72),
   displayName: z.string().min(1).max(40).optional(),
 });
+
+const loginSchema = z.object({
+  handle: z.string().min(1),
+  password: z.string().min(1),
+});
+
+// Hash factice calculé une fois : égalise le temps de réponse pour un handle inconnu.
+const dummyHash = hashPassword("dummy-password-for-timing");
 
 export const authRoutes = new Hono().post("/register", async (c) => {
   const body: unknown = await c.req.json().catch(() => null);
@@ -31,4 +40,27 @@ export const authRoutes = new Hono().post("/register", async (c) => {
   const { token } = await createSession(db, user.id);
   setCookie(c, SESSION_COOKIE, token, sessionCookieOptions(process.env["NODE_ENV"] === "production"));
   return c.json({ id: user.id, handle: user.handle, displayName: user.displayName }, 201);
+}).post("/login", async (c) => {
+  const body: unknown = await c.req.json().catch(() => null);
+  const parsed = loginSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: "invalid body" }, 400);
+  const { handle, password } = parsed.data;
+
+  const check = loginLimiter.check(handle);
+  if (!check.allowed) {
+    c.header("Retry-After", String(check.retryAfterSeconds));
+    return c.json({ error: "too many attempts" }, 429);
+  }
+
+  const user = await db.user.findUnique({ where: { handle } });
+  const valid = await verifyPassword(password, user ? user.passwordHash : await dummyHash);
+  if (!user || !valid) {
+    loginLimiter.recordFailure(handle);
+    return c.json({ error: "invalid credentials" }, 401);
+  }
+
+  loginLimiter.reset(handle);
+  const { token } = await createSession(db, user.id);
+  setCookie(c, SESSION_COOKIE, token, sessionCookieOptions(process.env["NODE_ENV"] === "production"));
+  return c.json({ id: user.id, handle: user.handle, displayName: user.displayName }, 200);
 });
