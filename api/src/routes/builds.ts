@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { requireAuth, type AuthEnv } from "../auth/require-auth.js";
 import { db } from "../db.js";
 import { partKindSchema } from "./parts.js";
 
@@ -17,9 +18,11 @@ const updateBuildSchema = z.object({
 });
 const addPartSchema = z.object({ partId: z.number().int() });
 
-export const buildsRoutes = new Hono()
+export const buildsRoutes = new Hono<AuthEnv>()
+  .use(requireAuth)
   .get("/", async (c) => {
     const rows = await db.build.findMany({
+      where: { ownerId: c.get("user").id },
       orderBy: { id: "asc" },
       include: { parts: { orderBy: { id: "asc" }, include: { part: true } } },
     });
@@ -40,11 +43,11 @@ export const buildsRoutes = new Hono()
     const { name } = parsed.data;
 
     const lower = name.toLowerCase();
-    const all = await db.build.findMany({ select: { name: true } });
+    const all = await db.build.findMany({ where: { ownerId: c.get("user").id }, select: { name: true } });
     if (all.some((b) => b.name.toLowerCase() === lower)) {
       return c.json({ error: "build name already exists" }, 409);
     }
-    const row = await db.build.create({ data: { name } });
+    const row = await db.build.create({ data: { name, ownerId: c.get("user").id } });
     return c.json(buildSchema.parse({ id: row.id, name: row.name, notes: row.notes, parts: [] }), 201);
   })
   .patch("/:id", async (c) => {
