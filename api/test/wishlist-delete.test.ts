@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const wishlistItemSchema = z.object({
   id: z.number(),
@@ -16,7 +15,7 @@ const listSchema = z.array(wishlistItemSchema);
 const errorSchema = z.object({ error: z.string().min(1) });
 
 async function postWishlist(body: unknown): Promise<Response> {
-  return app.request("/api/wishlist", {
+  return authed("/api/wishlist", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -24,7 +23,7 @@ async function postWishlist(body: unknown): Promise<Response> {
 }
 
 async function deleteWishlist(id: number): Promise<Response> {
-  return app.request(`/api/wishlist/${String(id)}`, { method: "DELETE" });
+  return authed(`/api/wishlist/${String(id)}`, { method: "DELETE" });
 }
 
 // Chaque test crée sa propre pièce (aucune ligne de liste d'achats ni d'inventaire) et la supprime ensuite.
@@ -43,7 +42,7 @@ async function makeWishlistItem(): Promise<z.output<typeof wishlistItemSchema>> 
 }
 
 async function listAll(): Promise<z.output<typeof listSchema>> {
-  return readJson(await get("/api/wishlist"), listSchema);
+  return readJson(await authed("/api/wishlist"), listSchema);
 }
 
 async function rowsFor(partId: number): Promise<z.output<typeof listSchema>> {
