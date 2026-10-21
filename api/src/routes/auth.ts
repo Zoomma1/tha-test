@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { setCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
 import { loginLimiter } from "../auth/login-limiter.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
-import { createSession, SESSION_COOKIE, sessionCookieOptions } from "../auth/session.js";
+import { createSession, deleteSession, findSessionUser, SESSION_COOKIE, sessionCookieOptions } from "../auth/session.js";
 import { db } from "../db.js";
 
 const registerSchema = z.object({
@@ -63,4 +63,14 @@ export const authRoutes = new Hono().post("/register", async (c) => {
   const { token } = await createSession(db, user.id);
   setCookie(c, SESSION_COOKIE, token, sessionCookieOptions(process.env["NODE_ENV"] === "production"));
   return c.json({ id: user.id, handle: user.handle, displayName: user.displayName }, 200);
+}).get("/me", async (c) => {
+  const token = getCookie(c, SESSION_COOKIE);
+  const user = token ? await findSessionUser(db, token) : null;
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  return c.json(user, 200);
+}).post("/logout", async (c) => {
+  const token = getCookie(c, SESSION_COOKIE);
+  if (token) await deleteSession(db, token);
+  deleteCookie(c, SESSION_COOKIE, { path: "/" });
+  return c.body(null, 204);
 });
