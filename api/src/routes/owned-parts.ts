@@ -54,7 +54,7 @@ export const ownedPartsRoutes = new Hono()
     const part = await db.part.findUnique({ where: { id: partId } });
     if (!part) return c.json({ error: "part not found" }, 404);
 
-    const existing = await db.ownedPart.findUnique({ where: { partId } });
+    const existing = await db.ownedPart.findFirst({ where: { partId } });
     if (existing) {
       if (existing.quantity + quantity > MAX_QUANTITY) {
         return c.json({ error: "quantity limit" }, 409);
