@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
 import { SEED_BUILD } from "../src/seed-data.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const buildSchema = z.object({
   id: z.number(),
@@ -38,7 +37,7 @@ async function makePart(kind: Kind): Promise<TestPart> {
 }
 
 async function addPart(buildId: number, partId: number): Promise<Response> {
-  return app.request(`/api/builds/${String(buildId)}/parts`, {
+  return authed(`/api/builds/${String(buildId)}/parts`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ partId }),
@@ -46,7 +45,7 @@ async function addPart(buildId: number, partId: number): Promise<Response> {
 }
 
 async function listedBuild(buildId: number): Promise<z.output<typeof buildSchema> | undefined> {
-  const body = await readJson(await get("/api/builds"), listSchema);
+  const body = await readJson(await authed("/api/builds"), listSchema);
   return body.find((build) => build.id === buildId);
 }
 
@@ -114,7 +113,7 @@ describe("POST /api/builds/:id/parts: erreurs 404", () => {
     const body = await readJson(res, errorSchema);
     expect(body.error).toBeTruthy();
 
-    const listed = await readJson(await get("/api/builds"), listSchema);
+    const listed = await readJson(await authed("/api/builds"), listSchema);
     expect(listed.some((build) => build.parts.some((p) => p.id === part.id))).toBe(false);
   });
 
@@ -157,7 +156,7 @@ describe("POST /api/builds/:id/parts: emplacement déjà pris (409)", () => {
   });
 
   it("refuses a second blade on the seeded build, which already has one", async () => {
-    const seeded = (await readJson(await get("/api/builds"), listSchema)).find(
+    const seeded = (await readJson(await authed("/api/builds"), listSchema)).find(
       (build) => build.name === SEED_BUILD.name,
     );
     if (seeded === undefined) throw new Error("le build seedé est introuvable");

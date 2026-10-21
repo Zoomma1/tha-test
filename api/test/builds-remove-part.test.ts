@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const buildSchema = z.object({
   id: z.number(),
@@ -39,11 +38,11 @@ async function attach(buildId: number, partId: number): Promise<void> {
 }
 
 async function removePart(buildId: number, partId: number): Promise<Response> {
-  return app.request(`/api/builds/${String(buildId)}/parts/${String(partId)}`, { method: "DELETE" });
+  return authed(`/api/builds/${String(buildId)}/parts/${String(partId)}`, { method: "DELETE" });
 }
 
 async function listedBuild(buildId: number): Promise<z.output<typeof buildSchema> | undefined> {
-  const body = await readJson(await get("/api/builds"), listSchema);
+  const body = await readJson(await authed("/api/builds"), listSchema);
   return body.find((build) => build.id === buildId);
 }
 

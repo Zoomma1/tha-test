@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
 import { SEED_BUILD } from "../src/seed-data.js";
-import { get, readJson } from "./helpers.js";
+import { authed, readJson } from "./helpers.js";
 
 const buildSchema = z.object({
   id: z.number(),
@@ -17,7 +16,7 @@ const listSchema = z.array(buildSchema);
 const errorSchema = z.object({ error: z.string().min(1) });
 
 async function postBuildRaw(body: string): Promise<Response> {
-  return app.request("/api/builds", {
+  return authed("/api/builds", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body,
@@ -59,7 +58,7 @@ describe("POST /api/builds: création (201)", () => {
   it("lists the new build with no parts", async () => {
     const name = `Build listé ${randomUUID()}`;
     const created = await readJson(await postCreated({ name }), buildSchema);
-    const listed = (await readJson(await get("/api/builds"), listSchema)).find((b) => b.id === created.id);
+    const listed = (await readJson(await authed("/api/builds"), listSchema)).find((b) => b.id === created.id);
     expect(listed).toEqual({ id: created.id, name, notes: null, parts: [] });
   });
 
@@ -99,9 +98,9 @@ describe("POST /api/builds: nom vide (400)", () => {
   });
 
   it("creates no build for an invalid name", async () => {
-    const before = (await readJson(await get("/api/builds"), listSchema)).length;
+    const before = (await readJson(await authed("/api/builds"), listSchema)).length;
     await postCreated({ name: "   " });
-    const after = (await readJson(await get("/api/builds"), listSchema)).length;
+    const after = (await readJson(await authed("/api/builds"), listSchema)).length;
     expect(after).toBe(before);
   });
 });
@@ -137,7 +136,7 @@ describe("POST /api/builds: nom déjà pris (409)", () => {
     await postCreated({ name });
     await postCreated({ name: name.toUpperCase() });
 
-    const matching = (await readJson(await get("/api/builds"), listSchema)).filter(
+    const matching = (await readJson(await authed("/api/builds"), listSchema)).filter(
       (b) => b.name.toLowerCase() === name.toLowerCase(),
     );
     expect(matching).toHaveLength(1);

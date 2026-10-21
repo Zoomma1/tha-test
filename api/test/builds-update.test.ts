@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
 import { SEED_BUILD } from "../src/seed-data.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const buildSchema = z.object({
   id: z.number(),
@@ -46,7 +45,7 @@ async function attach(buildId: number, partId: number): Promise<void> {
 }
 
 async function patchRaw(id: number, body: string): Promise<Response> {
-  return app.request(`/api/builds/${String(id)}`, {
+  return authed(`/api/builds/${String(id)}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body,
@@ -58,7 +57,7 @@ async function patchBuild(id: number, body: unknown): Promise<Response> {
 }
 
 async function listBuilds(): Promise<z.output<typeof listSchema>> {
-  return readJson(await get("/api/builds"), listSchema);
+  return readJson(await authed("/api/builds"), listSchema);
 }
 
 async function listedBuild(buildId: number): Promise<z.output<typeof buildSchema> | undefined> {

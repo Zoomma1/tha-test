@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, get, partSchema, readJson } from "./helpers.js";
 
 const buildSchema = z.object({
   id: z.number(),
@@ -40,11 +39,11 @@ async function attach(buildId: number, partId: number): Promise<void> {
 }
 
 async function deleteBuild(id: number): Promise<Response> {
-  return app.request(`/api/builds/${String(id)}`, { method: "DELETE" });
+  return authed(`/api/builds/${String(id)}`, { method: "DELETE" });
 }
 
 async function listBuilds(): Promise<z.output<typeof listSchema>> {
-  return readJson(await get("/api/builds"), listSchema);
+  return readJson(await authed("/api/builds"), listSchema);
 }
 
 async function listedBuild(buildId: number): Promise<z.output<typeof buildSchema> | undefined> {
@@ -127,7 +126,7 @@ describe("DELETE /api/builds/:id: suppression (204)", () => {
     await attach(build.id, part.id);
     expect((await deleteBuild(build.id)).status).toBe(204);
 
-    const res = await app.request(`/api/builds/${String(build.id)}/parts`, {
+    const res = await authed(`/api/builds/${String(build.id)}/parts`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ partId: part.id }),
