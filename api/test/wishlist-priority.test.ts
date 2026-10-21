@@ -6,10 +6,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { createDb, db } from "../src/db.js";
 import { SEED_WISHLIST } from "../src/seed-data.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const apiDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RESET_TIMEOUT = 120_000;
@@ -30,7 +29,7 @@ const columnSchema = z.object({ name: z.string(), notnull: z.number(), dflt_valu
 const seedPrioritySchema = z.array(z.object({ name: z.string(), priority: z.number().int() }));
 
 async function postWishlist(body: unknown): Promise<Response> {
-  return app.request("/api/wishlist", {
+  return authed("/api/wishlist", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -47,7 +46,7 @@ async function makePart(): Promise<{ id: number; kind: string; name: string }> {
 }
 
 async function listAll(): Promise<z.output<typeof listSchema>> {
-  return readJson(await get("/api/wishlist"), listSchema);
+  return readJson(await authed("/api/wishlist"), listSchema);
 }
 
 async function rowsFor(partId: number): Promise<z.output<typeof listSchema>> {

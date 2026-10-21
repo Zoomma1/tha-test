@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const wishlistItemSchema = z.object({
   id: z.number(),
@@ -45,11 +44,11 @@ async function own(partId: number): Promise<void> {
 }
 
 async function fromBuild(buildId: number): Promise<Response> {
-  return app.request(`/api/wishlist/from-build/${String(buildId)}`, { method: "POST" });
+  return authed(`/api/wishlist/from-build/${String(buildId)}`, { method: "POST" });
 }
 
 async function rowsFor(partId: number): Promise<z.output<typeof listSchema>> {
-  const body = await readJson(await get("/api/wishlist"), listSchema);
+  const body = await readJson(await authed("/api/wishlist"), listSchema);
   return body.filter((row) => row.partId === partId);
 }
 
