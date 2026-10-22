@@ -69,6 +69,19 @@ model User {
   ownedParts   OwnedPart[]
   builds       Build[]
   wishlist     WishlistItem[]
+  following    Follow[]  @relation("Follower")
+  followers    Follow[]  @relation("Followee")
+}
+
+model Follow {
+  id         Int      @id @default(autoincrement())
+  followerId Int
+  followeeId Int
+  createdAt  DateTime @default(now())
+  follower   User     @relation("Follower", fields: [followerId], references: [id])
+  followee   User     @relation("Followee", fields: [followeeId], references: [id])
+
+  @@unique([followerId, followeeId])
 }
 
 model Session {
