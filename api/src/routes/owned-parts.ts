@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { requireAuth, type AuthEnv } from "../auth/require-auth.js";
 import { db } from "../db.js";
 import { partKindSchema } from "./parts.js";
 
@@ -37,15 +38,19 @@ function toBody(r: OwnedRow): z.output<typeof ownedPartSchema> {
   });
 }
 
-export const ownedPartsRoutes = new Hono()
+export const ownedPartsRoutes = new Hono<AuthEnv>()
+  .use(requireAuth)
   .get("/", async (c) => {
+    const ownerId = c.get("user").id;
     const rows = await db.ownedPart.findMany({
+      where: { ownerId },
       orderBy: { id: "asc" },
       include: { part: true },
     });
     return c.json(rows.map(toBody), 200);
   })
   .post("/", async (c) => {
+    const ownerId = c.get("user").id;
     const json: unknown = await c.req.json().catch(() => null);
     const parsed = addOwnedPartSchema.safeParse(json);
     if (!parsed.success) return c.json({ error: "invalid body" }, 400);
@@ -54,7 +59,7 @@ export const ownedPartsRoutes = new Hono()
     const part = await db.part.findUnique({ where: { id: partId } });
     if (!part) return c.json({ error: "part not found" }, 404);
 
-    const existing = await db.ownedPart.findFirst({ where: { partId } });
+    const existing = await db.ownedPart.findFirst({ where: { partId, ownerId } });
     if (existing) {
       if (existing.quantity + quantity > MAX_QUANTITY) {
         return c.json({ error: "quantity limit" }, 409);
@@ -67,20 +72,21 @@ export const ownedPartsRoutes = new Hono()
       return c.json(toBody(row), 200);
     }
     const row = await db.ownedPart.create({
-      data: { partId, quantity },
+      data: { partId, quantity, ownerId },
       include: { part: true },
     });
     return c.json(toBody(row), 201);
   })
   .patch("/:id", async (c) => {
+    const ownerId = c.get("user").id;
     const json: unknown = await c.req.json().catch(() => null);
     const parsed = updateOwnedPartSchema.safeParse(json);
     if (!parsed.success) return c.json({ error: "invalid body" }, 400);
 
     const id = Number(c.req.param("id"));
-    if (!Number.isInteger(id)) return c.json({ error: "owned part not found" }, 404);
-    const existing = await db.ownedPart.findUnique({ where: { id } });
-    if (!existing) return c.json({ error: "owned part not found" }, 404);
+    if (!Number.isInteger(id)) return c.json({ error: "not found" }, 404);
+    const existing = await db.ownedPart.findFirst({ where: { id, ownerId } });
+    if (!existing) return c.json({ error: "not found" }, 404);
 
     const row = await db.ownedPart.update({
       where: { id },
@@ -90,10 +96,11 @@ export const ownedPartsRoutes = new Hono()
     return c.json(toBody(row), 200);
   })
   .delete("/:id", async (c) => {
+    const ownerId = c.get("user").id;
     const id = Number(c.req.param("id"));
-    if (!Number.isInteger(id)) return c.json({ error: "owned part not found" }, 404);
-    const existing = await db.ownedPart.findUnique({ where: { id } });
-    if (!existing) return c.json({ error: "owned part not found" }, 404);
+    if (!Number.isInteger(id)) return c.json({ error: "not found" }, 404);
+    const existing = await db.ownedPart.findFirst({ where: { id, ownerId } });
+    if (!existing) return c.json({ error: "not found" }, 404);
 
     await db.ownedPart.delete({ where: { id } });
     return c.body(null, 204);

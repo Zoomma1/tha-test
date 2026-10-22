@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
-import { get, partSchema, readJson } from "./helpers.js";
+import { authed, partSchema, readJson } from "./helpers.js";
 
 const ownedPartSchema = z.object({
   id: z.number(),
@@ -16,7 +15,7 @@ const listSchema = z.array(ownedPartSchema);
 const errorSchema = z.object({ error: z.string().min(1) });
 
 async function postOwned(body: unknown): Promise<Response> {
-  return app.request("/api/owned-parts", {
+  return authed("/api/owned-parts", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -24,7 +23,7 @@ async function postOwned(body: unknown): Promise<Response> {
 }
 
 async function patchOwned(id: number, body: unknown): Promise<Response> {
-  return app.request(`/api/owned-parts/${String(id)}`, {
+  return authed(`/api/owned-parts/${String(id)}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -47,7 +46,7 @@ async function makeOwned(quantity: number): Promise<z.output<typeof ownedPartSch
 }
 
 async function rowsFor(partId: number): Promise<z.output<typeof listSchema>> {
-  const body = await readJson(await get("/api/owned-parts"), listSchema);
+  const body = await readJson(await authed("/api/owned-parts"), listSchema);
   return body.filter((row) => row.partId === partId);
 }
 
@@ -99,7 +98,7 @@ describe("PATCH /api/owned-parts/:id: remplacement de la quantité (200)", () =>
 
 describe("PATCH /api/owned-parts/:id: erreurs", () => {
   it("returns 404 with an error for an unknown id", async () => {
-    const rows = await readJson(await get("/api/owned-parts"), listSchema);
+    const rows = await readJson(await authed("/api/owned-parts"), listSchema);
     const unknown = Math.max(0, ...rows.map((row) => row.id)) + 1;
 
     const res = await patchOwned(unknown, { quantity: 4 });

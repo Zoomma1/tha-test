@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { app } from "../src/app.js";
 import { db } from "../src/db.js";
 import { authed, partSchema, readJson } from "./helpers.js";
 
@@ -36,7 +35,7 @@ async function addPart(buildId: number, partId: number): Promise<Response> {
 }
 
 async function own(partId: number): Promise<void> {
-  const res = await app.request("/api/owned-parts", {
+  const res = await authed("/api/owned-parts", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ partId, quantity: 1 }),
