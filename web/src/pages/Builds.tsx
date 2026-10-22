@@ -1,15 +1,28 @@
 import { useState, type SyntheticEvent } from "react";
+import { Link } from "react-router-dom";
 import { useApi } from "../api-context";
 import type { Api } from "../lib/api-client";
-import { addBuildPart, BuildApiError, createBuild, loadBuildMissing, loadBuilds } from "../lib/queries/builds";
+import { addBuildPart, BuildApiError, createBuild, loadBuildMissing, loadBuilds, UnauthorizedError } from "../lib/queries/builds";
 import { loadParts } from "../lib/queries/parts";
 import { addMissingToWishlist } from "../lib/queries/wishlist";
 import { describeError, useLoad } from "../lib/use-load";
 
 type PartOption = { id: number; name: string };
 
+const LOGIN_MESSAGE = "Please log in to see your builds.";
+
 function errorMessage(error: unknown): string {
+  if (error instanceof UnauthorizedError) return LOGIN_MESSAGE;
   return error instanceof BuildApiError ? error.message : describeError(error);
+}
+
+function Alert({ message }: { message: string }) {
+  if (message !== LOGIN_MESSAGE) return <p role="alert">{message}</p>;
+  return (
+    <p role="alert">
+      {message} <Link to="/login">Log in</Link>
+    </p>
+  );
 }
 
 function BuildComposer({
@@ -65,7 +78,7 @@ function BuildComposer({
       <button type="submit" disabled={pending}>
         Add
       </button>
-      {error !== null && <p role="alert">{error}</p>}
+      {error !== null && <Alert message={error} />}
     </form>
   );
 }
@@ -112,14 +125,28 @@ function BuildMissing({ api, buildId }: { api: Api; buildId: number }) {
         </>
       )}
       {confirmed && <p role="status">Missing parts added to the wishlist</p>}
-      {error !== null && <p role="alert">{error}</p>}
+      {error !== null && <Alert message={error} />}
     </>
   );
 }
 
 export function Builds() {
   const api = useApi();
-  const { state, reload } = useLoad(() => loadBuilds(api), []);
+  const [unauthorized, setUnauthorized] = useState(false);
+  const { state, reload } = useLoad(
+    () =>
+      loadBuilds(api).then(
+        (data) => {
+          setUnauthorized(false);
+          return data;
+        },
+        (e: unknown) => {
+          setUnauthorized(e instanceof UnauthorizedError);
+          throw e;
+        },
+      ),
+    [],
+  );
   const { state: partsState } = useLoad(() => loadParts(api), []);
   const [name, setName] = useState("");
   const [pending, setPending] = useState(false);
@@ -146,8 +173,8 @@ export function Builds() {
 
   // Un seul indicateur et une seule erreur de chargement ; l'erreur des builds prime sur celle des pièces.
   let notice = null;
-  if (state.status === "error") notice = <p role="alert">{state.message}</p>;
-  else if (partsState.status === "error") notice = <p role="alert">{partsState.message}</p>;
+  if (state.status === "error") notice = <Alert message={unauthorized ? LOGIN_MESSAGE : state.message} />;
+  else if (partsState.status === "error") notice = <Alert message={partsState.message} />;
   else if (state.status === "loading" || partsState.status === "loading") {
     notice = <p role="status">Loading...</p>;
   }
@@ -171,7 +198,7 @@ export function Builds() {
           Create
         </button>
       </form>
-      {createError !== null && <p role="alert">{createError}</p>}
+      {createError !== null && <Alert message={createError} />}
       {notice}
       {state.status === "ready" &&
         (state.data.length === 0 ? (
