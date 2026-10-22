@@ -34,8 +34,10 @@ describe("PartDetail", () => {
     const { api, requests } = fakeApi(detailHandler());
     renderApp(api, "/parts/1");
     await screen.findByText(/Dran Sword/);
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ method: "GET", path: "/api/parts/1" });
+    // La barre de session lit aussi GET /api/auth/me : on ne compte que les lectures de pièce.
+    const partRequests = requests.filter((r) => r.method === "GET" && r.path.startsWith("/api/parts/"));
+    expect(partRequests).toHaveLength(1);
+    expect(partRequests[0]).toMatchObject({ method: "GET", path: "/api/parts/1" });
   });
 
   it("shows Part not found when the API answers 404", async () => {
