@@ -1,12 +1,20 @@
 import type { PrismaClient } from "./generated/client.js";
 import { hashPassword } from "./auth/password.js";
-import { DEMO_PASSWORD, SEED_BUILD, SEED_OWNED, SEED_PARTS, SEED_USERS, SEED_WISHLIST } from "./seed-data.js";
+import { DEMO_PASSWORD, SEED_BUILD, SEED_FOLLOWS, SEED_OWNED, SEED_PARTS, SEED_USERS, SEED_WISHLIST } from "./seed-data.js";
 
 export async function seed(db: PrismaClient): Promise<void> {
   for (const u of SEED_USERS) {
     const passwordHash = await hashPassword(DEMO_PASSWORD);
     await db.user.create({ data: { handle: u.handle, displayName: u.displayName, passwordHash } });
   }
+
+  const users = await db.user.findMany();
+  const userId = (handle: string): number => {
+    const user = users.find((u) => u.handle === handle);
+    if (user === undefined) throw new Error(`utilisateur de seed inconnu : ${handle}`);
+    return user.id;
+  };
+  await db.follow.createMany({ data: SEED_FOLLOWS.map((f) => ({ followerId: userId(f.follower), followeeId: userId(f.followee) })) });
 
   await db.part.createMany({ data: [...SEED_PARTS] });
   const me = await db.user.findUnique({ where: { handle: "me" } });

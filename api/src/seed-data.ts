@@ -56,5 +56,11 @@ export const SEED_USERS: readonly { handle: string; displayName: string }[] = [
   { handle: "dave", displayName: "Dave" },
 ];
 
+export const SEED_FOLLOWS: readonly { follower: string; followee: string }[] = [
+  { follower: "me", followee: "alice" },
+  { follower: "me", followee: "bob" },
+  { follower: "alice", followee: "me" },
+];
+
 // Identifiants de démonstration, volontairement écrits dans ce dépôt public.
 export const DEMO_PASSWORD = "demo-password-1";
