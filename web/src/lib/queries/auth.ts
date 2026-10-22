@@ -83,3 +83,26 @@ export async function login(api: Api, handle: string, password: string): Promise
     return "failed";
   }
 }
+
+export type RegisterResult = "ok" | "taken" | "failed";
+
+export async function register(
+  api: Api,
+  input: { handle: string; password: string; displayName?: string },
+): Promise<RegisterResult> {
+  try {
+    const res = await api.api.auth.register.$post({ json: input });
+    const status: number = res.status;
+    if (status === 201) {
+      const user = await loadSession(api);
+      sessionListeners.forEach((listener) => {
+        listener(user);
+      });
+      return "ok";
+    }
+    if (status === 409) return "taken";
+    return "failed";
+  } catch {
+    return "failed";
+  }
+}
