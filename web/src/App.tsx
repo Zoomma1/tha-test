@@ -5,6 +5,7 @@ import { Inventory } from "./pages/Inventory";
 import { Login } from "./pages/Login";
 import { PartDetail } from "./pages/PartDetail";
 import { Parts } from "./pages/Parts";
+import { Register } from "./pages/Register";
 import { Wishlist } from "./pages/Wishlist";
 
 export function App() {
@@ -21,6 +22,7 @@ export function App() {
         <Route path="/builds" element={<Builds />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="*" element={<p>Page introuvable.</p>} />
       </Routes>
     </main>
