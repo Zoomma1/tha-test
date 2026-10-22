@@ -1,10 +1,17 @@
 import type { Api } from "../api-client";
 import { HttpError } from "../use-load";
 
+export class UnauthorizedError extends HttpError {
+  constructor() {
+    super(401);
+  }
+}
+
 export async function loadBuilds(api: Api) {
   const res = await api.api.builds.$get();
   // Le type de hc ne documente que 200 : un proxy peut aussi répondre 5xx.
   const status: number = res.status;
+  if (status === 401) throw new UnauthorizedError();
   if (status !== 200) throw new HttpError(status);
   return res.json();
 }
@@ -13,6 +20,7 @@ export class BuildApiError extends Error {}
 
 // Lève BuildApiError avec le message de l'API (ex. 409 `slot taken`), HttpError pour tout autre échec.
 async function failWith(res: Response): Promise<never> {
+  if (res.status === 401) throw new UnauthorizedError();
   const body: unknown = await res.json().catch(() => null);
   if (typeof body === "object" && body !== null && "error" in body && typeof body.error === "string") {
     throw new BuildApiError(body.error);
