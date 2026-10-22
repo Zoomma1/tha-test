@@ -1,4 +1,5 @@
 import { Link, Route, Routes } from "react-router-dom";
+import { SessionBar } from "./components/SessionBar";
 import { Builds } from "./pages/Builds";
 import { Inventory } from "./pages/Inventory";
 import { PartDetail } from "./pages/PartDetail";
@@ -10,7 +11,7 @@ export function App() {
     <main>
       <nav>
         <Link to="/">Parts</Link> <Link to="/inventory">Inventory</Link> <Link to="/builds">Builds</Link>{" "}
-        <Link to="/wishlist">Wishlist</Link>
+        <Link to="/wishlist">Wishlist</Link> <SessionBar />
       </nav>
       <Routes>
         <Route path="/" element={<Parts />} />
