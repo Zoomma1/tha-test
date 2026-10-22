@@ -1,7 +1,9 @@
 import { useState, type SyntheticEvent } from "react";
+import { Link } from "react-router-dom";
 import { useApi } from "../api-context";
 import { Async } from "../lib/Async";
 import { loadParts } from "../lib/queries/parts";
+import { UnauthorizedError } from "../lib/queries/owned-parts";
 import { addWishlistItem, loadWishlist, removeWishlistItem } from "../lib/queries/wishlist";
 import { describeError, useLoad } from "../lib/use-load";
 
@@ -9,7 +11,15 @@ const PRIORITIES = [0, 1, 2, 3, 4, 5];
 
 export function Wishlist() {
   const api = useApi();
-  const { state, reload } = useLoad(() => loadWishlist(api), []);
+  const [unauthorized, setUnauthorized] = useState(false);
+  const { state, reload } = useLoad(
+    () =>
+      loadWishlist(api).catch((error: unknown) => {
+        if (error instanceof UnauthorizedError) setUnauthorized(true);
+        throw error;
+      }),
+    [],
+  );
   const { state: partsState } = useLoad(() => loadParts(api), []);
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [partId, setPartId] = useState("");
@@ -25,6 +35,7 @@ export function Wishlist() {
   const remove = (id: number) => {
     setRemoveError(null);
     removeWishlistItem(api, id).then(reload, (error: unknown) => {
+      if (error instanceof UnauthorizedError) setUnauthorized(true);
       setRemoveError(describeError(error));
     });
   };
@@ -43,10 +54,21 @@ export function Wishlist() {
       },
       (error: unknown) => {
         setPending(false);
+        if (error instanceof UnauthorizedError) setUnauthorized(true);
         setAddError(describeError(error));
       },
     );
   };
+
+  if (unauthorized) {
+    return (
+      <section>
+        <h1>Wishlist</h1>
+        <p>Please log in to see your wishlist.</p>
+        <Link to="/login">Log in</Link>
+      </section>
+    );
+  }
 
   return (
     <section>
