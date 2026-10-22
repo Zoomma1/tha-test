@@ -51,18 +51,19 @@ export const buildsRoutes = new Hono<AuthEnv>()
     return c.json(buildSchema.parse({ id: row.id, name: row.name, notes: row.notes, parts: [] }), 201);
   })
   .patch("/:id", async (c) => {
+    const ownerId = c.get("user").id;
     const id = Number(c.req.param("id"));
     const json: unknown = await c.req.json().catch(() => null);
     const parsed = updateBuildSchema.safeParse(json);
     if (!parsed.success) return c.json({ error: "invalid body" }, 400);
     const { name, notes } = parsed.data;
 
-    const build = Number.isInteger(id) ? await db.build.findUnique({ where: { id } }) : null;
-    if (build === null) return c.json({ error: "build not found" }, 404);
+    const build = Number.isInteger(id) ? await db.build.findFirst({ where: { id, ownerId } }) : null;
+    if (build === null) return c.json({ error: "not found" }, 404);
 
     if (name !== undefined) {
       const lower = name.toLowerCase();
-      const others = await db.build.findMany({ where: { id: { not: id } }, select: { name: true } });
+      const others = await db.build.findMany({ where: { id: { not: id }, ownerId }, select: { name: true } });
       if (others.some((b) => b.name.toLowerCase() === lower)) {
         return c.json({ error: "build name already exists" }, 409);
       }
@@ -84,17 +85,18 @@ export const buildsRoutes = new Hono<AuthEnv>()
     return c.json(body, 200);
   })
   .get("/:id/missing", async (c) => {
+    const ownerId = c.get("user").id;
     const id = Number(c.req.param("id"));
     const build = Number.isInteger(id)
-      ? await db.build.findUnique({
-          where: { id },
+      ? await db.build.findFirst({
+          where: { id, ownerId },
           include: { parts: { orderBy: { id: "asc" }, include: { part: true } } },
         })
       : null;
-    if (build === null) return c.json({ error: "build not found" }, 404);
+    if (build === null) return c.json({ error: "not found" }, 404);
 
     const owned = await db.ownedPart.findMany({
-      where: { partId: { in: build.parts.map((bp) => bp.partId) } },
+      where: { ownerId, partId: { in: build.parts.map((bp) => bp.partId) } },
       select: { partId: true },
     });
     const ownedIds = new Set(owned.map((o) => o.partId));
@@ -106,6 +108,7 @@ export const buildsRoutes = new Hono<AuthEnv>()
     return c.json(body, 200);
   })
   .post("/:id/parts", async (c) => {
+    const ownerId = c.get("user").id;
     const id = Number(c.req.param("id"));
     const json: unknown = await c.req.json().catch(() => null);
     const parsed = addPartSchema.safeParse(json);
@@ -113,12 +116,12 @@ export const buildsRoutes = new Hono<AuthEnv>()
     const { partId } = parsed.data;
 
     const build = Number.isInteger(id)
-      ? await db.build.findUnique({
-          where: { id },
+      ? await db.build.findFirst({
+          where: { id, ownerId },
           include: { parts: { orderBy: { id: "asc" }, include: { part: true } } },
         })
       : null;
-    if (build === null) return c.json({ error: "build not found" }, 404);
+    if (build === null) return c.json({ error: "not found" }, 404);
     const part = await db.part.findUnique({ where: { id: partId } });
     if (part === null) return c.json({ error: "part not found" }, 404);
 
@@ -135,9 +138,10 @@ export const buildsRoutes = new Hono<AuthEnv>()
     return c.json(body, 201);
   })
   .delete("/:id", async (c) => {
+    const ownerId = c.get("user").id;
     const id = Number(c.req.param("id"));
-    const build = Number.isInteger(id) ? await db.build.findUnique({ where: { id } }) : null;
-    if (build === null) return c.json({ error: "build not found" }, 404);
+    const build = Number.isInteger(id) ? await db.build.findFirst({ where: { id, ownerId } }) : null;
+    if (build === null) return c.json({ error: "not found" }, 404);
 
     await db.$transaction([
       db.buildPart.deleteMany({ where: { buildId: id } }),
@@ -146,13 +150,14 @@ export const buildsRoutes = new Hono<AuthEnv>()
     return c.body(null, 204);
   })
   .delete("/:id/parts/:partId", async (c) => {
+    const ownerId = c.get("user").id;
     const id = Number(c.req.param("id"));
     const partId = Number(c.req.param("partId"));
     if (!Number.isInteger(id) || !Number.isInteger(partId)) {
       return c.json({ error: "build part not found" }, 404);
     }
-    const build = await db.build.findUnique({ where: { id } });
-    if (build === null) return c.json({ error: "build not found" }, 404);
+    const build = await db.build.findFirst({ where: { id, ownerId } });
+    if (build === null) return c.json({ error: "not found" }, 404);
 
     const { count } = await db.buildPart.deleteMany({ where: { buildId: id, partId } });
     if (count === 0) return c.json({ error: "part not in build" }, 404);
