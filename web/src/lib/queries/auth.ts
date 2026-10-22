@@ -18,6 +18,9 @@ export async function loadSession(api: Api): Promise<SessionUser | null> {
   }
 }
 
+// Les composants qui affichent la session sont prévenus d'une connexion réussie.
+const sessionListeners = new Set<(user: SessionUser | null) => void>();
+
 export async function logout(api: Api): Promise<void> {
   try {
     await api.api.auth.logout.$post();
@@ -30,6 +33,13 @@ export function useSession(): { user: SessionUser | null; loading: boolean; logO
   const api = useApi();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    sessionListeners.add(setUser);
+    return () => {
+      sessionListeners.delete(setUser);
+    };
+  }, []);
 
   useEffect(() => {
     let current = true;
@@ -51,4 +61,25 @@ export function useSession(): { user: SessionUser | null; loading: boolean; logO
   }, [api]);
 
   return { user, loading, logOut };
+}
+
+export type LoginResult = "ok" | "invalid" | "rate-limited" | "failed";
+
+export async function login(api: Api, handle: string, password: string): Promise<LoginResult> {
+  try {
+    const res = await api.api.auth.login.$post({ json: { handle, password } });
+    const status: number = res.status;
+    if (status === 200) {
+      const user = await loadSession(api);
+      sessionListeners.forEach((listener) => {
+        listener(user);
+      });
+      return "ok";
+    }
+    if (status === 401) return "invalid";
+    if (status === 429) return "rate-limited";
+    return "failed";
+  } catch {
+    return "failed";
+  }
 }
