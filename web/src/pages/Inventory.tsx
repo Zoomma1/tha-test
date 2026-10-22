@@ -1,7 +1,8 @@
 import { useState, type SyntheticEvent } from "react";
+import { Link } from "react-router-dom";
 import { useApi } from "../api-context";
 import { Async } from "../lib/Async";
-import { addOwnedPart, ApiError, deleteOwnedPart, loadOwnedParts, updateOwnedPart } from "../lib/queries/owned-parts";
+import { addOwnedPart, ApiError, deleteOwnedPart, loadOwnedParts, UnauthorizedError, updateOwnedPart } from "../lib/queries/owned-parts";
 import { loadParts } from "../lib/queries/parts";
 import { describeError, useLoad } from "../lib/use-load";
 
@@ -9,7 +10,15 @@ const KIND_LABELS = { blade: "Lame", ratchet: "Ratchet", bit: "Bit" };
 
 export function Inventory() {
   const api = useApi();
-  const { state, reload } = useLoad(() => loadOwnedParts(api), []);
+  const [unauthorized, setUnauthorized] = useState(false);
+  const { state, reload } = useLoad(
+    () =>
+      loadOwnedParts(api).catch((error: unknown) => {
+        if (error instanceof UnauthorizedError) setUnauthorized(true);
+        throw error;
+      }),
+    [],
+  );
   const { state: partsState } = useLoad(() => loadParts(api), []);
   const [partId, setPartId] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -30,6 +39,7 @@ export function Inventory() {
       },
       (error: unknown) => {
         setPending(false);
+        if (error instanceof UnauthorizedError) setUnauthorized(true);
         setAddError(error instanceof ApiError ? error.message : describeError(error));
       },
     );
@@ -45,10 +55,21 @@ export function Inventory() {
         reload();
       },
       (error: unknown) => {
+        if (error instanceof UnauthorizedError) setUnauthorized(true);
         setAddError(error instanceof ApiError ? error.message : describeError(error));
       },
     );
   };
+
+  if (unauthorized) {
+    return (
+      <section>
+        <h1>Inventory</h1>
+        <p>Please log in to see your inventory.</p>
+        <Link to="/login">Log in</Link>
+      </section>
+    );
+  }
 
   return (
     <section>
